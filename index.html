@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0d1117">
+<title>Status Dashboard</title>
+<link rel="manifest" href="manifest.json">
+<script>if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');</script>
+<style>
+:root {
+  --bg: #0d1117; --bg-card: #161b22; --bg-hover: #1c2333;
+  --bg-input: #0d1117; --bg-sidebar: #0d1117;
+  --text: #e6edf3; --text-secondary: #8b949e; --text-muted: #484f58;
+  --accent: #58a6ff; --ok: #3fb950; --fail: #f85149; --warn: #d29922;
+  --border: #30363d; --radius: 8px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* ── Layout ── */
+.app { display: flex; flex-direction: column; height: 100vh; }
+.header { background: var(--bg-card); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.header-left { display: flex; align-items: center; gap: 12px; }
+.header-title { font-size: 18px; font-weight: 600; }
+.header-title .icon { font-size: 20px; }
+.header-sub { font-size: 12px; color: var(--text-muted); }
+.header-right { display: flex; align-items: center; gap: 12px; }
+.auto-refresh-label { font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
+.auto-refresh-label input { accent-color: var(--accent); }
+.sync-btn { background: var(--bg-hover); border: 1px solid var(--border); color: var(--text-secondary); font-size: 14px; cursor: pointer; padding: 6px 14px; border-radius: var(--radius); display: flex; align-items: center; gap: 6px; font-family: inherit; }
+.sync-btn:hover { background: var(--bg-card); color: var(--text); }
+.sync-btn .spin-icon { display: inline-block; }
+.sync-btn.spinning .spin-icon { animation: spin 1s linear infinite; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+.content { display: flex; flex: 1; overflow: hidden; }
+
+/* ── Sidebar ── */
+.sidebar { width: 220px; flex-shrink: 0; background: var(--bg-sidebar); border-right: 1px solid var(--border); padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
+.sidebar-section { }
+.sidebar-title { font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 8px; }
+.sidebar-stat { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; font-size: 13px; cursor: pointer; transition: background 0.15s; }
+.sidebar-stat:hover { background: var(--bg-hover); }
+.sidebar-stat.active { background: var(--bg-hover); color: var(--accent); }
+.sidebar-stat .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.sidebar-stat .count { margin-left: auto; font-weight: 600; font-size: 14px; }
+.search-input { width: 100%; background: var(--bg-input); border: 1px solid var(--border); color: var(--text); padding: 8px 10px; border-radius: 6px; font-size: 13px; font-family: inherit; outline: none; }
+.search-input:focus { border-color: var(--accent); }
+.search-input::placeholder { color: var(--text-muted); }
+.filter-btn { width: 100%; background: none; border: 1px solid var(--border); color: var(--text-secondary); padding: 7px 10px; border-radius: 6px; font-size: 13px; cursor: pointer; text-align: left; font-family: inherit; transition: all 0.15s; }
+.filter-btn:hover { background: var(--bg-hover); }
+.filter-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(88,166,255,0.08); }
+.filter-group { display: flex; flex-direction: column; gap: 4px; }
+
+/* ── Main ── */
+.main { flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; }
+
+/* ── Summary cards ── */
+.summary-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.summary-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 18px; min-width: 140px; flex: 1; }
+.summary-card .label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 4px; }
+.summary-card .value { font-size: 28px; font-weight: 700; }
+.summary-card .sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+.summary-card.card-ok .value { color: var(--ok); }
+.summary-card.card-fail .value { color: var(--fail); }
+.summary-card.card-warn .value { color: var(--warn); }
+.summary-card.card-total .value { color: var(--accent); }
+
+/* ── Table ── */
+.table-wrap { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; flex: 1; display: flex; flex-direction: column; }
+.table-header-bar { padding: 10px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.table-title { font-size: 14px; font-weight: 600; }
+.table-count { font-size: 12px; color: var(--text-muted); }
+table { width: 100%; border-collapse: collapse; }
+thead th { position: sticky; top: 0; background: var(--bg-card); padding: 10px 14px; text-align: left; font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.3px; border-bottom: 1px solid var(--border); cursor: pointer; white-space: nowrap; user-select: none; }
+thead th:hover { color: var(--text-secondary); }
+thead th.sorted { color: var(--accent); }
+thead th .sort-arrow { margin-left: 4px; font-size: 10px; }
+tbody tr { border-bottom: 1px solid rgba(48,54,61,0.5); cursor: pointer; transition: background 0.1s; }
+tbody tr:hover { background: var(--bg-hover); }
+tbody tr.selected { background: rgba(88,166,255,0.08); }
+tbody td { padding: 10px 14px; font-size: 13px; white-space: nowrap; }
+.td-name { font-weight: 600; }
+.td-badge { display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 600; text-transform: uppercase; }
+.badge-gas { background: rgba(210,153,34,0.15); color: var(--warn); }
+.badge-python { background: rgba(88,166,255,0.15); color: var(--accent); }
+.td-status { display: flex; align-items: center; gap: 6px; }
+.td-status .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.status-text-ok { color: var(--ok); }
+.status-text-fail { color: var(--fail); font-weight: 600; }
+.status-text-warn { color: var(--warn); }
+.td-error { max-width: 250px; overflow: hidden; text-overflow: ellipsis; color: var(--fail); font-size: 12px; }
+.td-muted { color: var(--text-muted); }
+.td-right { text-align: right; }
+.table-scroll { overflow-y: auto; flex: 1; }
+
+/* ── History panel ── */
+.history-panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; max-height: 360px; display: flex; flex-direction: column; }
+.history-panel.hidden { display: none; }
+.history-header { padding: 10px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.history-title { font-size: 14px; font-weight: 600; }
+.close-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 18px; padding: 2px 6px; border-radius: 4px; font-family: inherit; }
+.close-btn:hover { color: var(--text); background: var(--bg-hover); }
+.history-body { overflow-y: auto; flex: 1; }
+.history-table { width: 100%; border-collapse: collapse; }
+.history-table th { padding: 8px 14px; text-align: left; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; border-bottom: 1px solid var(--border); background: var(--bg-card); position: sticky; top: 0; }
+.history-table td { padding: 8px 14px; font-size: 12px; border-bottom: 1px solid rgba(48,54,61,0.4); }
+.history-table tr:hover { background: var(--bg-hover); }
+
+/* ── Loading / Empty ── */
+.loading { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+.loading .spinner { font-size: 24px; animation: spin 1s linear infinite; display: inline-block; margin-bottom: 8px; }
+.empty { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 14px; }
+
+/* ── Footer ── */
+.footer { background: var(--bg-card); border-top: 1px solid var(--border); padding: 8px 24px; font-size: 11px; color: var(--text-muted); display: flex; justify-content: space-between; flex-shrink: 0; }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <div class="header-title"><span class="icon">📡</span> Status Dashboard</div>
+      <div class="header-sub" id="lastUpdate">Loading...</div>
+    </div>
+    <div class="header-right">
+      <label class="auto-refresh-label">
+        <input type="checkbox" id="autoRefresh" checked> Auto-refresh 60s
+      </label>
+      <button class="sync-btn" id="syncBtn" onclick="refresh()">
+        <span class="spin-icon">⟳</span> Refresh
+      </button>
+    </div>
+  </div>
+
+  <div class="content">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-title">Status</div>
+        <div id="sidebarStats">
+          <div class="sidebar-stat active" data-filter="all" onclick="filterStatus('all')">
+            <span>All Scripts</span>
+            <span class="count" id="countAll">-</span>
+          </div>
+          <div class="sidebar-stat" data-filter="ok" onclick="filterStatus('ok')">
+            <span class="dot" style="background:var(--ok)"></span>
+            <span>OK</span>
+            <span class="count" id="countOk">-</span>
+          </div>
+          <div class="sidebar-stat" data-filter="fail" onclick="filterStatus('fail')">
+            <span class="dot" style="background:var(--fail)"></span>
+            <span>Failed</span>
+            <span class="count" id="countFail">-</span>
+          </div>
+          <div class="sidebar-stat" data-filter="warn" onclick="filterStatus('warn')">
+            <span class="dot" style="background:var(--warn)"></span>
+            <span>Timeout</span>
+            <span class="count" id="countWarn">-</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">Type</div>
+        <div class="filter-group">
+          <button class="filter-btn active" data-type="all" onclick="filterType('all')">All</button>
+          <button class="filter-btn" data-type="GAS" onclick="filterType('GAS')">GAS</button>
+          <button class="filter-btn" data-type="Python" onclick="filterType('Python')">Python</button>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="sidebar-title">Search</div>
+        <input class="search-input" type="text" id="searchInput" placeholder="Filter scripts..." oninput="applyFilters()">
+      </div>
+    </div>
+
+    <!-- Main -->
+    <div class="main">
+      <!-- Summary cards -->
+      <div class="summary-row" id="summaryRow">
+        <div class="summary-card card-total"><div class="label">Total Scripts</div><div class="value" id="sumTotal">-</div></div>
+        <div class="summary-card card-ok"><div class="label">OK</div><div class="value" id="sumOk">-</div></div>
+        <div class="summary-card card-fail"><div class="label">Failed</div><div class="value" id="sumFail">-</div></div>
+        <div class="summary-card card-warn"><div class="label">Timeout</div><div class="value" id="sumWarn">-</div></div>
+        <div class="summary-card"><div class="label">Runs (24h)</div><div class="value" id="sumRuns">-</div><div class="sub" id="sumFails24"></div></div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-wrap">
+        <div class="table-header-bar">
+          <div class="table-title">Scripts</div>
+          <div class="table-count" id="tableCount"></div>
+        </div>
+        <div class="table-scroll">
+          <table id="mainTable">
+            <thead>
+              <tr>
+                <th data-col="name" onclick="sortBy('name')">Name <span class="sort-arrow"></span></th>
+                <th data-col="type" onclick="sortBy('type')">Type <span class="sort-arrow"></span></th>
+                <th data-col="lastStatus" onclick="sortBy('lastStatus')">Status <span class="sort-arrow"></span></th>
+                <th data-col="lastRun" onclick="sortBy('lastRun')">Last Run <span class="sort-arrow"></span></th>
+                <th data-col="lastDuration" onclick="sortBy('lastDuration')">Duration <span class="sort-arrow"></span></th>
+                <th data-col="runs24h" onclick="sortBy('runs24h')">24h Runs <span class="sort-arrow"></span></th>
+                <th data-col="fails24h" onclick="sortBy('fails24h')">24h Fails <span class="sort-arrow"></span></th>
+                <th data-col="lastError" onclick="sortBy('lastError')">Error <span class="sort-arrow"></span></th>
+              </tr>
+            </thead>
+            <tbody id="tableBody">
+              <tr><td colspan="8"><div class="loading"><div class="spinner">⟳</div><div>Loading...</div></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- History panel -->
+      <div class="history-panel hidden" id="historyPanel">
+        <div class="history-header">
+          <div class="history-title" id="historyTitle">History</div>
+          <button class="close-btn" onclick="closeHistory()">✕</button>
+        </div>
+        <div class="history-body">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Source</th>
+                <th>Function</th>
+                <th>Status</th>
+                <th>Duration</th>
+                <th>Found</th>
+                <th>New</th>
+                <th>Added</th>
+                <th>Error</th>
+                <th>Note</th>
+              </tr>
+            </thead>
+            <tbody id="historyBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <span id="footerLeft">-</span>
+    <span id="footerRight">903 Status Dashboard</span>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// Config
+// ═══════════════════════════════════════════════════════════════════
+
+var API_URL = 'https://script.google.com/macros/s/AKfycbyJgWHsro6BDSGBUW0Ax-stnZpzr49Ex1rj80PxmJMX-Ac7z_7UM-lvdlRuFNrxVdPW/exec';
+var state = {
+  scripts: [],
+  filtered: [],
+  sortCol: 'lastRun',
+  sortAsc: false,
+  statusFilter: 'all',
+  typeFilter: 'all',
+  selectedScript: '',
+  refreshTimer: null
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// Data
+// ═══════════════════════════════════════════════════════════════════
+
+function fetchStatus(cb) {
+  fetch(API_URL + '?action=getStatus')
+    .then(function(r) { return r.json(); })
+    .then(function(d) { cb(null, d); })
+    .catch(function(e) { cb(e); });
+}
+
+function fetchHistory(script, days, cb) {
+  fetch(API_URL + '?action=getHistory&script=' + encodeURIComponent(script) + '&days=' + days)
+    .then(function(r) { return r.json(); })
+    .then(function(d) { cb(null, d); })
+    .catch(function(e) { cb(e); });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Render — Summary
+// ═══════════════════════════════════════════════════════════════════
+
+function renderSummary() {
+  var all = state.scripts;
+  var ok = 0, fail = 0, warn = 0, runs = 0, fails24 = 0;
+  for (var i = 0; i < all.length; i++) {
+    var s = all[i];
+    if (s.lastStatus === 'COMPLETED') ok++;
+    else if (s.lastStatus === 'FAILED') fail++;
+    else if (s.lastStatus === 'TIMED_OUT') warn++;
+    runs += (s.runs24h || 0);
+    fails24 += (s.fails24h || 0);
+  }
+
+  document.getElementById('sumTotal').textContent = all.length;
+  document.getElementById('sumOk').textContent = ok;
+  document.getElementById('sumFail').textContent = fail;
+  document.getElementById('sumWarn').textContent = warn;
+  document.getElementById('sumRuns').textContent = runs;
+  document.getElementById('sumFails24').textContent = fails24 > 0 ? (fails24 + ' failed') : '';
+
+  document.getElementById('countAll').textContent = all.length;
+  document.getElementById('countOk').textContent = ok;
+  document.getElementById('countFail').textContent = fail;
+  document.getElementById('countWarn').textContent = warn;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Render — Table
+// ═══════════════════════════════════════════════════════════════════
+
+function renderTable() {
+  var list = state.filtered;
+  document.getElementById('tableCount').textContent = list.length + ' of ' + state.scripts.length;
+
+  // Update sort arrows
+  var ths = document.querySelectorAll('#mainTable thead th');
+  for (var t = 0; t < ths.length; t++) {
+    var col = ths[t].getAttribute('data-col');
+    var arrow = ths[t].querySelector('.sort-arrow');
+    if (col === state.sortCol) {
+      ths[t].classList.add('sorted');
+      arrow.textContent = state.sortAsc ? '▲' : '▼';
+    } else {
+      ths[t].classList.remove('sorted');
+      arrow.textContent = '';
+    }
+  }
+
+  if (list.length === 0) {
+    document.getElementById('tableBody').innerHTML = '<tr><td colspan="8"><div class="empty">No scripts match filter</div></td></tr>';
+    return;
+  }
+
+  var html = '';
+  for (var i = 0; i < list.length; i++) {
+    var s = list[i];
+    var dotColor = getStatusColor(s.lastStatus);
+    var statusCls = getStatusTextClass(s.lastStatus);
+    var badgeCls = (s.type === 'GAS') ? 'badge-gas' : 'badge-python';
+    var relTime = s.lastRun ? formatRelative(s.lastRun) : '-';
+    var dur = (s.lastDuration && parseFloat(s.lastDuration) > 0) ? parseFloat(s.lastDuration).toFixed(1) + 's' : '-';
+    var selectedCls = (s.name === state.selectedScript) ? ' selected' : '';
+
+    html += '<tr class="' + selectedCls + '" onclick="selectScript(\'' + esc(s.name) + '\')">';
+    html += '<td class="td-name">' + esc(s.name) + '</td>';
+    html += '<td><span class="td-badge ' + badgeCls + '">' + esc(s.type) + '</span></td>';
+    html += '<td><div class="td-status"><span class="dot" style="background:' + dotColor + '"></span><span class="' + statusCls + '">' + esc(s.lastStatus || 'UNKNOWN') + '</span></div></td>';
+    html += '<td class="td-muted">' + relTime + '</td>';
+    html += '<td class="td-right td-muted">' + dur + '</td>';
+    html += '<td class="td-right">' + (s.runs24h || 0) + '</td>';
+    html += '<td class="td-right">' + (s.fails24h > 0 ? '<span style="color:var(--fail)">' + s.fails24h + '</span>' : '0') + '</td>';
+    html += '<td class="td-error">' + esc(s.lastError && s.lastStatus !== 'COMPLETED' ? s.lastError : '') + '</td>';
+    html += '</tr>';
+  }
+  document.getElementById('tableBody').innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Render — History
+// ═══════════════════════════════════════════════════════════════════
+
+function renderHistory(data) {
+  var entries = data.entries || [];
+  document.getElementById('historyTitle').textContent = (data.script || 'All') + ' — Last ' + data.days + ' days (' + entries.length + ' entries)';
+
+  if (entries.length === 0) {
+    document.getElementById('historyBody').innerHTML = '<tr><td colspan="10" class="empty">No entries</td></tr>';
+    return;
+  }
+
+  var html = '';
+  for (var i = 0; i < entries.length; i++) {
+    var e = entries[i];
+    var dotColor = getStatusColor(e.status);
+    var statusCls = getStatusTextClass(e.status);
+    var ts = e.timestamp || '';
+    var timeStr = '';
+    if (ts.length >= 13) {
+      timeStr = ts.substring(0, 6) + ' ' + ts.substring(7, 9) + ':' + ts.substring(9, 11) + ':' + ts.substring(11, 13);
+    } else {
+      timeStr = ts;
+    }
+    var dur = (e.duration && parseFloat(e.duration) > 0) ? parseFloat(e.duration).toFixed(1) + 's' : '-';
+
+    html += '<tr>';
+    html += '<td style="white-space:nowrap">' + timeStr + '</td>';
+    html += '<td>' + esc(e.source || '') + '</td>';
+    html += '<td>' + esc(e['function'] || '') + '</td>';
+    html += '<td><span class="' + statusCls + '">' + esc(e.status) + '</span></td>';
+    html += '<td class="td-right">' + dur + '</td>';
+    html += '<td class="td-right">' + (e.found !== undefined && e.found !== '' ? e.found : '-') + '</td>';
+    html += '<td class="td-right">' + (e.new_count !== undefined && e.new_count !== '' ? e.new_count : '-') + '</td>';
+    html += '<td class="td-right">' + (e.added !== undefined && e.added !== '' ? e.added : '-') + '</td>';
+    html += '<td class="td-error">' + esc(e.error && e.status !== 'COMPLETED' ? e.error : '') + '</td>';
+    html += '<td class="td-muted" style="max-width:200px;overflow:hidden;text-overflow:ellipsis">' + esc(e.note || '') + '</td>';
+    html += '</tr>';
+  }
+  document.getElementById('historyBody').innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Filter & Sort
+// ═══════════════════════════════════════════════════════════════════
+
+function applyFilters() {
+  var search = (document.getElementById('searchInput').value || '').toLowerCase();
+  var list = state.scripts.filter(function(s) {
+    // Status filter
+    if (state.statusFilter === 'ok' && s.lastStatus !== 'COMPLETED') return false;
+    if (state.statusFilter === 'fail' && s.lastStatus !== 'FAILED') return false;
+    if (state.statusFilter === 'warn' && s.lastStatus !== 'TIMED_OUT') return false;
+    // Type filter
+    if (state.typeFilter !== 'all' && s.type !== state.typeFilter) return false;
+    // Search
+    if (search && s.name.toLowerCase().indexOf(search) === -1) return false;
+    return true;
+  });
+
+  // Sort
+  var col = state.sortCol;
+  var asc = state.sortAsc;
+  list.sort(function(a, b) {
+    var va = a[col], vb = b[col];
+    if (typeof va === 'number' && typeof vb === 'number') {
+      return asc ? va - vb : vb - va;
+    }
+    va = String(va || ''); vb = String(vb || '');
+    var cmp = va.localeCompare(vb);
+    return asc ? cmp : -cmp;
+  });
+
+  state.filtered = list;
+  renderTable();
+}
+
+function filterStatus(status) {
+  state.statusFilter = status;
+  var items = document.querySelectorAll('#sidebarStats .sidebar-stat');
+  for (var i = 0; i < items.length; i++) {
+    items[i].classList.toggle('active', items[i].getAttribute('data-filter') === status);
+  }
+  applyFilters();
+}
+
+function filterType(type) {
+  state.typeFilter = type;
+  var btns = document.querySelectorAll('.filter-btn');
+  for (var i = 0; i < btns.length; i++) {
+    btns[i].classList.toggle('active', btns[i].getAttribute('data-type') === type);
+  }
+  applyFilters();
+}
+
+function sortBy(col) {
+  if (state.sortCol === col) {
+    state.sortAsc = !state.sortAsc;
+  } else {
+    state.sortCol = col;
+    state.sortAsc = (col === 'name' || col === 'type');
+  }
+  applyFilters();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Script selection & history
+// ═══════════════════════════════════════════════════════════════════
+
+function selectScript(name) {
+  if (state.selectedScript === name) {
+    closeHistory();
+    return;
+  }
+  state.selectedScript = name;
+  renderTable();
+
+  var panel = document.getElementById('historyPanel');
+  panel.classList.remove('hidden');
+  document.getElementById('historyBody').innerHTML = '<tr><td colspan="10"><div class="loading"><div class="spinner">⟳</div></div></td></tr>';
+  document.getElementById('historyTitle').textContent = name + ' — Loading...';
+
+  fetchHistory(name, 7, function(err, data) {
+    if (err) {
+      document.getElementById('historyBody').innerHTML = '<tr><td colspan="10" class="empty">Error loading</td></tr>';
+      return;
+    }
+    renderHistory(data);
+  });
+}
+
+function closeHistory() {
+  state.selectedScript = '';
+  document.getElementById('historyPanel').classList.add('hidden');
+  renderTable();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Refresh
+// ═══════════════════════════════════════════════════════════════════
+
+function refresh() {
+  var btn = document.getElementById('syncBtn');
+  btn.classList.add('spinning');
+  fetchStatus(function(err, data) {
+    btn.classList.remove('spinning');
+    if (err) return;
+    onDataLoaded(data);
+  });
+}
+
+function onDataLoaded(data) {
+  state.scripts = data.scripts || [];
+  document.getElementById('lastUpdate').textContent = 'Updated: ' + formatRelative(data.timestamp);
+  document.getElementById('footerLeft').textContent = state.scripts.length + ' scripts · Last refresh: ' + formatTime(data.timestamp);
+  renderSummary();
+  applyFilters();
+  try { localStorage.setItem('dashboard_cache', JSON.stringify(data)); } catch(e) {}
+}
+
+function startAutoRefresh() {
+  if (state.refreshTimer) clearInterval(state.refreshTimer);
+  state.refreshTimer = setInterval(function() {
+    if (document.getElementById('autoRefresh').checked) refresh();
+  }, 60000);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Helpers
+// ═══════════════════════════════════════════════════════════════════
+
+function getStatusColor(status) {
+  if (status === 'COMPLETED') return 'var(--ok)';
+  if (status === 'FAILED') return 'var(--fail)';
+  if (status === 'TIMED_OUT' || status === 'CANCELED') return 'var(--warn)';
+  return 'var(--text-muted)';
+}
+
+function getStatusTextClass(status) {
+  if (status === 'COMPLETED') return 'status-text-ok';
+  if (status === 'FAILED') return 'status-text-fail';
+  if (status === 'TIMED_OUT' || status === 'CANCELED') return 'status-text-warn';
+  return '';
+}
+
+function formatRelative(ts) {
+  if (!ts) return '-';
+  // Support both YYMMDD.HHmmss and YYMMDD:HHmmss
+  var sep = ts.indexOf('.') > -1 ? '.' : ':';
+  var parts = ts.split(sep);
+  if (parts.length < 2) return ts;
+  var d = parts[0], t = parts[1];
+  if (d.length !== 6 || t.length !== 6) return ts;
+
+  var year = 2000 + parseInt(d.substring(0, 2));
+  var month = parseInt(d.substring(2, 4)) - 1;
+  var day = parseInt(d.substring(4, 6));
+  var hour = parseInt(t.substring(0, 2));
+  var min = parseInt(t.substring(2, 4));
+  var sec = parseInt(t.substring(4, 6));
+
+  var then = new Date(year, month, day, hour, min, sec);
+  var now = new Date();
+  var diff = Math.floor((now - then) / 1000);
+
+  if (diff < 0) return 'just now';
+  if (diff < 60) return diff + 's ago';
+  if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+  return Math.floor(diff / 86400) + 'd ago';
+}
+
+function formatTime(ts) {
+  if (!ts) return '-';
+  var sep = ts.indexOf('.') > -1 ? '.' : ':';
+  var parts = ts.split(sep);
+  if (parts.length < 2) return ts;
+  var t = parts[1];
+  if (t.length !== 6) return ts;
+  return t.substring(0, 2) + ':' + t.substring(2, 4) + ':' + t.substring(4, 6);
+}
+
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Init
+// ═══════════════════════════════════════════════════════════════════
+
+(function init() {
+  // Try cache
+  try {
+    var cached = localStorage.getItem('dashboard_cache');
+    if (cached) onDataLoaded(JSON.parse(cached));
+  } catch(e) {}
+
+  // Fetch fresh
+  fetchStatus(function(err, data) {
+    if (err) {
+      if (!state.scripts.length) {
+        document.getElementById('tableBody').innerHTML = '<tr><td colspan="8"><div class="empty">Could not load data</div></td></tr>';
+      }
+      return;
+    }
+    onDataLoaded(data);
+  });
+
+  startAutoRefresh();
+})();
+</script>
+</body>
+</html>
