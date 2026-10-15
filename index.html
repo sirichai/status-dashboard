@@ -115,6 +115,44 @@ tbody td { padding: 10px 14px; font-size: 13px; white-space: nowrap; }
 
 /* ── Footer ── */
 .footer { background: var(--bg-card); border-top: 1px solid var(--border); padding: 8px 24px; font-size: 11px; color: var(--text-muted); display: flex; justify-content: space-between; flex-shrink: 0; }
+
+/* ── View tabs ── */
+.view-tabs { display: flex; gap: 4px; margin-left: 12px; }
+.view-tab { background: none; border: 1px solid transparent; color: var(--text-secondary); font-size: 13px; padding: 5px 12px; border-radius: 6px; cursor: pointer; font-family: inherit; }
+.view-tab:hover { background: var(--bg-hover); color: var(--text); }
+.view-tab.active { border-color: var(--border); background: var(--bg-hover); color: var(--accent); font-weight: 600; }
+.view-hidden { display: none !important; }
+.sidebar-view { display: flex; flex-direction: column; gap: 20px; }
+
+/* ── Oracle ── */
+.badge-primary { background: rgba(88,166,255,0.15); color: var(--accent); }
+.badge-standby { background: rgba(163,113,247,0.15); color: #a371f7; }
+.badge-env { background: rgba(139,148,158,0.15); color: var(--text-secondary); margin-left: 6px; }
+.ora-host { display: block; font-size: 11px; color: var(--text-muted); font-weight: 400; }
+.bar-cell { display: flex; align-items: center; gap: 8px; min-width: 120px; }
+.bar { flex: 1; height: 6px; background: rgba(139,148,158,0.18); border-radius: 3px; overflow: hidden; min-width: 50px; }
+.bar-fill { height: 100%; border-radius: 3px; }
+.bar-pct { font-size: 12px; min-width: 42px; text-align: right; }
+.stale-tag { font-size: 10px; color: var(--warn); border: 1px solid var(--warn); border-radius: 8px; padding: 0 5px; margin-left: 6px; }
+.issues-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 16px; max-height: 160px; overflow-y: auto; }
+.issues-card .issue { font-size: 12px; padding: 3px 0; display: flex; gap: 8px; cursor: pointer; }
+.issues-card .issue:hover { color: var(--accent); }
+.issue-lvl { font-weight: 700; font-size: 10px; min-width: 38px; }
+.ora-detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px; padding: 12px 16px; }
+.ora-box { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.ora-box-title { font-size: 12px; font-weight: 600; text-transform: uppercase; color: var(--text-muted); padding: 8px 12px; border-bottom: 1px solid var(--border); letter-spacing: 0.3px; }
+.ora-box-body { max-height: 260px; overflow: auto; }
+.kv { display: grid; grid-template-columns: 140px 1fr; font-size: 12px; }
+.kv div { padding: 5px 12px; border-bottom: 1px solid rgba(48,54,61,0.4); }
+.kv div:nth-child(odd) { color: var(--text-muted); }
+.ora-detail-panel { max-height: none; }
+.ora-detail-panel .history-body { max-height: 70vh; }
+.spark { display: block; width: 100%; height: 90px; }
+#mainOracle .table-wrap, #mainOracle .history-panel { flex: none; }
+#mainOracle .table-scroll { overflow-x: auto; }
+.ora-box .history-table td, .ora-box .history-table th { padding: 6px 10px; }
+.ora-box .bar-cell { min-width: 100px; }
+.ora-box .bar { min-width: 36px; }
 </style>
 </head>
 <body>
@@ -123,6 +161,10 @@ tbody td { padding: 10px 14px; font-size: 13px; white-space: nowrap; }
   <div class="header">
     <div class="header-left">
       <div class="header-title"><span class="icon">📡</span> Status Dashboard</div>
+      <div class="view-tabs">
+        <button class="view-tab active" data-view="scripts" onclick="switchView('scripts')">Scripts</button>
+        <button class="view-tab" data-view="oracle" onclick="switchView('oracle')">Oracle DB</button>
+      </div>
       <div class="header-sub" id="lastUpdate">Loading...</div>
     </div>
     <div class="header-right">
@@ -138,6 +180,7 @@ tbody td { padding: 10px 14px; font-size: 13px; white-space: nowrap; }
   <div class="content">
     <!-- Sidebar -->
     <div class="sidebar">
+     <div class="sidebar-view" id="sidebarScripts">
       <div class="sidebar-section">
         <div class="sidebar-title">Status</div>
         <div id="sidebarStats">
@@ -176,10 +219,43 @@ tbody td { padding: 10px 14px; font-size: 13px; white-space: nowrap; }
         <div class="sidebar-title">Search</div>
         <input class="search-input" type="text" id="searchInput" placeholder="Filter scripts..." oninput="applyFilters()">
       </div>
+     </div>
+
+     <div class="sidebar-view view-hidden" id="sidebarOracle">
+      <div class="sidebar-section">
+        <div class="sidebar-title">Health</div>
+        <div id="oraSidebarStats">
+          <div class="sidebar-stat active" data-filter="all" onclick="oraFilterStatus('all')">
+            <span>All Databases</span><span class="count" id="oraCountAll">-</span>
+          </div>
+          <div class="sidebar-stat" data-filter="OK" onclick="oraFilterStatus('OK')">
+            <span class="dot" style="background:var(--ok)"></span><span>OK</span><span class="count" id="oraCountOk">-</span>
+          </div>
+          <div class="sidebar-stat" data-filter="WARN" onclick="oraFilterStatus('WARN')">
+            <span class="dot" style="background:var(--warn)"></span><span>Warning</span><span class="count" id="oraCountWarn">-</span>
+          </div>
+          <div class="sidebar-stat" data-filter="CRIT" onclick="oraFilterStatus('CRIT')">
+            <span class="dot" style="background:var(--fail)"></span><span>Critical / Down</span><span class="count" id="oraCountCrit">-</span>
+          </div>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">Role</div>
+        <div class="filter-group" id="oraRoleFilter">
+          <button class="filter-btn active" data-role="all" onclick="oraFilterRole('all')">All</button>
+          <button class="filter-btn" data-role="PRIMARY" onclick="oraFilterRole('PRIMARY')">Primary</button>
+          <button class="filter-btn" data-role="STANDBY" onclick="oraFilterRole('STANDBY')">Standby</button>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-title">Search</div>
+        <input class="search-input" type="text" id="oraSearch" placeholder="Filter databases..." oninput="oraApplyFilters()">
+      </div>
+     </div>
     </div>
 
     <!-- Main -->
-    <div class="main">
+    <div class="main" id="mainScripts">
       <!-- Summary cards -->
       <div class="summary-row" id="summaryRow">
         <div class="summary-card card-total"><div class="label">Total Scripts</div><div class="value" id="sumTotal">-</div></div>
@@ -241,6 +317,59 @@ tbody td { padding: 10px 14px; font-size: 13px; white-space: nowrap; }
             <tbody id="historyBody"></tbody>
           </table>
         </div>
+      </div>
+    </div>
+
+    <!-- Oracle view -->
+    <div class="main view-hidden" id="mainOracle">
+      <div class="summary-row">
+        <div class="summary-card card-total"><div class="label">Databases</div><div class="value" id="oraSumTotal">-</div><div class="sub" id="oraSumRoles"></div></div>
+        <div class="summary-card card-ok"><div class="label">OK</div><div class="value" id="oraSumOk">-</div></div>
+        <div class="summary-card card-warn"><div class="label">Warning</div><div class="value" id="oraSumWarn">-</div></div>
+        <div class="summary-card card-fail"><div class="label">Critical / Down</div><div class="value" id="oraSumCrit">-</div></div>
+        <div class="summary-card"><div class="label">Total Size</div><div class="value" id="oraSumSize">-</div><div class="sub" id="oraSumUsed"></div></div>
+        <div class="summary-card"><div class="label">Backup</div><div class="value" id="oraSumBackup">-</div><div class="sub" id="oraSumBackupSub"></div></div>
+        <div class="summary-card"><div class="label">Max Standby Lag</div><div class="value" id="oraSumLag">-</div><div class="sub" id="oraSumLagSub"></div></div>
+      </div>
+
+      <div class="issues-card view-hidden" id="oraIssues"></div>
+
+      <div class="table-wrap">
+        <div class="table-header-bar">
+          <div class="table-title">Oracle Databases</div>
+          <div class="table-count" id="oraTableCount"></div>
+        </div>
+        <div class="table-scroll">
+          <table id="oraTable">
+            <thead>
+              <tr>
+                <th data-col="name" onclick="oraSortBy('name')">Database <span class="sort-arrow"></span></th>
+                <th data-col="role" onclick="oraSortBy('role')">Role <span class="sort-arrow"></span></th>
+                <th data-col="statusRank" onclick="oraSortBy('statusRank')">Status <span class="sort-arrow"></span></th>
+                <th data-col="openMode" onclick="oraSortBy('openMode')">Open Mode <span class="sort-arrow"></span></th>
+                <th data-col="allocatedGB" onclick="oraSortBy('allocatedGB')">Size <span class="sort-arrow"></span></th>
+                <th data-col="pctUsed" onclick="oraSortBy('pctUsed')">Used <span class="sort-arrow"></span></th>
+                <th data-col="maxTs" onclick="oraSortBy('maxTs')">Max Tablespace <span class="sort-arrow"></span></th>
+                <th data-col="fraPct" onclick="oraSortBy('fraPct')">FRA <span class="sort-arrow"></span></th>
+                <th data-col="fullAgeH" onclick="oraSortBy('fullAgeH')">Full Backup <span class="sort-arrow"></span></th>
+                <th data-col="archAgeH" onclick="oraSortBy('archAgeH')">Arch Backup <span class="sort-arrow"></span></th>
+                <th data-col="lagSec" onclick="oraSortBy('lagSec')">Standby / DG <span class="sort-arrow"></span></th>
+                <th data-col="collectedAt" onclick="oraSortBy('collectedAt')">Updated <span class="sort-arrow"></span></th>
+              </tr>
+            </thead>
+            <tbody id="oraTableBody">
+              <tr><td colspan="12"><div class="loading"><div class="spinner">⟳</div><div>Loading...</div></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="history-panel ora-detail-panel hidden" id="oraDetailPanel">
+        <div class="history-header">
+          <div class="history-title" id="oraDetailTitle">Detail</div>
+          <button class="close-btn" onclick="oraCloseDetail()">✕</button>
+        </div>
+        <div class="history-body"><div class="ora-detail-grid" id="oraDetailBody"></div></div>
       </div>
     </div>
   </div>
@@ -456,7 +585,7 @@ function filterStatus(status) {
 
 function filterType(type) {
   state.typeFilter = type;
-  var btns = document.querySelectorAll('.filter-btn');
+  var btns = document.querySelectorAll('#sidebarScripts .filter-btn');
   for (var i = 0; i < btns.length; i++) {
     btns[i].classList.toggle('active', btns[i].getAttribute('data-type') === type);
   }
@@ -512,6 +641,10 @@ function closeHistory() {
 function refresh() {
   var btn = document.getElementById('syncBtn');
   btn.classList.add('spinning');
+  if (state.view === 'oracle') {
+    refreshOracle(function() { btn.classList.remove('spinning'); });
+    return;
+  }
   fetchStatus(function(err, data) {
     btn.classList.remove('spinning');
     if (err) return;
@@ -521,8 +654,11 @@ function refresh() {
 
 function onDataLoaded(data) {
   state.scripts = data.scripts || [];
-  document.getElementById('lastUpdate').textContent = 'Updated: ' + formatRelative(data.timestamp);
-  document.getElementById('footerLeft').textContent = state.scripts.length + ' scripts · Last refresh: ' + formatTime(data.timestamp);
+  state.lastTimestamp = data.timestamp;
+  if (state.view === 'scripts') {
+    document.getElementById('lastUpdate').textContent = 'Updated: ' + formatRelative(data.timestamp);
+    document.getElementById('footerLeft').textContent = state.scripts.length + ' scripts · Last refresh: ' + formatTime(data.timestamp);
+  }
   renderSummary();
   applyFilters();
   try { localStorage.setItem('dashboard_cache', JSON.stringify(data)); } catch(e) {}
@@ -596,15 +732,564 @@ function esc(s) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// View switching (Scripts / Oracle)
+// ═══════════════════════════════════════════════════════════════════
+
+state.view = 'scripts';
+
+function switchView(view) {
+  state.view = view;
+  var tabs = document.querySelectorAll('.view-tab');
+  for (var i = 0; i < tabs.length; i++) tabs[i].classList.toggle('active', tabs[i].getAttribute('data-view') === view);
+  document.getElementById('sidebarScripts').classList.toggle('view-hidden', view !== 'scripts');
+  document.getElementById('mainScripts').classList.toggle('view-hidden', view !== 'scripts');
+  document.getElementById('sidebarOracle').classList.toggle('view-hidden', view !== 'oracle');
+  document.getElementById('mainOracle').classList.toggle('view-hidden', view !== 'oracle');
+  try { localStorage.setItem('dashboard_view', view); } catch(e) {}
+  if (history.replaceState) history.replaceState(null, '', location.pathname + location.search + (view === 'oracle' ? '#oracle' : ''));
+  if (view === 'oracle') {
+    if (ora.loaded) oraUpdateHeader();
+    if (!ora.fetched) refreshOracle();
+  } else if (state.lastTimestamp) {
+    document.getElementById('lastUpdate').textContent = 'Updated: ' + formatRelative(state.lastTimestamp);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Oracle
+// ═══════════════════════════════════════════════════════════════════
+
+var ORA_STALE_MIN = 60;  // collectedAt older than this -> STALE
+var ORA_DEFAULT_TH = {
+  tablespaceWarnPct: 85, tablespaceCritPct: 95, fraWarnPct: 80, fraCritPct: 90,
+  fullBackupWarnHours: 192, fullBackupCritHours: 336, archBackupWarnHours: 6, archBackupCritHours: 24,
+  lagWarnSec: 300, lagCritSec: 1800
+};
+var ora = {
+  loaded: false, data: null, rows: [], filtered: [], th: ORA_DEFAULT_TH,
+  sortCol: 'statusRank', sortAsc: false, statusFilter: 'all', roleFilter: 'all', selected: ''
+};
+var ORA_DEMO = /[?&]demo\b/.test(location.search);
+
+function fetchOracle(cb) {
+  var url = ORA_DEMO ? 'oracle/sample_status.json' : API_URL + '?action=getOracleStatus';
+  fetch(url).then(function(r) { return r.json(); })
+    .then(function(d) { cb(null, d); })
+    .catch(function(e) { cb(e); });
+}
+
+function fetchOracleHistory(db, days, cb) {
+  if (ORA_DEMO) return cb(null, oraDemoHistory(db, days));
+  fetch(API_URL + '?action=getOracleHistory&db=' + encodeURIComponent(db) + '&days=' + days)
+    .then(function(r) { return r.json(); })
+    .then(function(d) { cb(null, d); })
+    .catch(function(e) { cb(e); });
+}
+
+function refreshOracle(done) {
+  ora.fetched = true;
+  fetchOracle(function(err, data) {
+    if (done) done();
+    if (err || !data || !data.databases) {
+      if (!ora.loaded) {
+        document.getElementById('oraTableBody').innerHTML = '<tr><td colspan="12"><div class="empty">' +
+          (err ? 'Could not load Oracle data' : 'No Oracle data yet — run oracle/oracle_status_collector.py (see oracle/README.md)') +
+          '</div></td></tr>';
+      }
+      return;
+    }
+    oraOnDataLoaded(data);
+  });
+}
+
+function oraOnDataLoaded(data) {
+  if (ORA_DEMO) oraDemoRebase(data);
+  ora.loaded = true;
+  ora.data = data;
+  ora.th = Object.assign({}, ORA_DEFAULT_TH, data.thresholds || {});
+  ora.rows = (data.databases || []).map(oraFlatten);
+  if (!ORA_DEMO) { try { localStorage.setItem('oracle_cache', JSON.stringify(data)); } catch(e) {} }
+  oraRenderSummary();
+  oraApplyFilters();
+  if (ora.selected) oraRenderDetail(ora.selected, true);
+  if (state.view === 'oracle') oraUpdateHeader();
+}
+
+function oraUpdateHeader() {
+  var d = ora.data || {};
+  document.getElementById('lastUpdate').textContent = 'Updated: ' + formatRelative(d.timestamp) + (ORA_DEMO ? ' (demo data)' : '');
+  document.getElementById('footerLeft').textContent = ora.rows.length + ' databases · Last refresh: ' + formatTime(d.timestamp);
+}
+
+/** Flatten one DB record into sortable / renderable fields. */
+function oraFlatten(d) {
+  var size = d.size || {}, b = d.backup || {}, sb = d.standby, fra = d.fra;
+  var ageMin = tsAgeSec(d.collectedAt) / 60;
+  var stale = !isNaN(ageMin) && ageMin > ORA_STALE_MIN;
+  var status = d.status || 'UNKNOWN';
+  var eff = status;
+  if (stale && (status === 'OK' || status === 'UNKNOWN')) eff = 'WARN';
+  var lagSec = null;
+  if (sb) lagSec = Math.max(sb.applyLagSec || 0, sb.transportLagSec || 0);
+  var isStandby = String(d.role || '').indexOf('STANDBY') > -1;
+  return {
+    raw: d, name: d.name, host: d.hostName || '', env: d.env || '', group: d.group || '',
+    role: d.role || '', isStandby: isStandby,
+    status: status, effStatus: eff, stale: stale,
+    statusRank: { OK: 0, UNKNOWN: 1, WARN: 2, CRIT: 3, DOWN: 4 }[eff] || 0,
+    openMode: d.openMode || '',
+    allocatedGB: size.allocatedGB, usedGB: size.usedGB, maxGB: size.maxGB, pctUsed: size.pctUsed,
+    maxTs: d.tablespaces ? d.maxTablespacePct : null,
+    fraPct: fra ? fra.pctUsed : null,
+    fullAgeH: b.fullAgeH, archAgeH: b.archAgeH, lastFull: b.lastFull, lastArch: b.lastArch,
+    backupExpected: d.backupExpected !== false,
+    lagSec: lagSec, collectedAt: d.collectedAt || ''
+  };
+}
+
+function oraRenderSummary() {
+  var rows = ora.rows, ok = 0, warn = 0, crit = 0, prim = 0, stby = 0;
+  var alloc = 0, used = 0, maxLag = null, maxLagDb = '', bkOk = 0, bkTotal = 0;
+  for (var i = 0; i < rows.length; i++) {
+    var r = rows[i];
+    if (r.effStatus === 'OK') ok++;
+    else if (r.effStatus === 'WARN' || r.effStatus === 'UNKNOWN') warn++;
+    else crit++;
+    if (r.isStandby) stby++; else if (r.role) prim++;
+    if (!r.isStandby) { alloc += r.allocatedGB || 0; used += r.usedGB || 0; }
+    if (r.lagSec !== null && (maxLag === null || r.lagSec > maxLag)) { maxLag = r.lagSec; maxLagDb = r.name; }
+    if (r.backupExpected && r.role) {
+      bkTotal++;
+      if (r.fullAgeH !== null && r.fullAgeH !== undefined && r.fullAgeH < ora.th.fullBackupWarnHours &&
+          (r.archAgeH === null || r.archAgeH === undefined || r.archAgeH < ora.th.archBackupWarnHours)) bkOk++;
+    }
+  }
+  setText('oraSumTotal', rows.length);
+  setText('oraSumRoles', prim + ' primary · ' + stby + ' standby');
+  setText('oraSumOk', ok); setText('oraSumWarn', warn); setText('oraSumCrit', crit);
+  setText('oraSumSize', fmtGB(alloc));
+  setText('oraSumUsed', fmtGB(used) + ' used (primary only)');
+  setText('oraSumBackup', bkOk + '/' + bkTotal);
+  setText('oraSumBackupSub', 'within backup policy');
+  setText('oraSumLag', maxLag === null ? '-' : fmtSec(maxLag));
+  setText('oraSumLagSub', maxLagDb);
+  document.getElementById('oraSumLag').style.color = maxLag === null ? '' : lvlColor(oraLevel(maxLag, ora.th.lagWarnSec, ora.th.lagCritSec));
+  setText('oraCountAll', rows.length); setText('oraCountOk', ok); setText('oraCountWarn', warn); setText('oraCountCrit', crit);
+
+  // Issues
+  var issues = [];
+  for (var j = 0; j < rows.length; j++) {
+    var list = rows[j].raw.issues || [];
+    for (var k = 0; k < list.length; k++) issues.push({ db: rows[j].name, level: list[k].level, msg: list[k].msg });
+    if (rows[j].stale) issues.push({ db: rows[j].name, level: 'WARN', msg: 'Data is stale (collected ' + formatRelative(rows[j].collectedAt) + ')' });
+  }
+  issues.sort(function(a, b) { return (a.level === 'CRIT' ? 0 : 1) - (b.level === 'CRIT' ? 0 : 1); });
+  var box = document.getElementById('oraIssues');
+  box.classList.toggle('view-hidden', issues.length === 0);
+  var html = '';
+  for (var n = 0; n < issues.length; n++) {
+    var it = issues[n];
+    html += '<div class="issue" onclick="oraSelect(\'' + esc(it.db) + '\')"><span class="issue-lvl" style="color:' +
+      (it.level === 'CRIT' ? 'var(--fail)' : 'var(--warn)') + '">' + esc(it.level) + '</span><b>' + esc(it.db) + '</b><span>' + esc(it.msg) + '</span></div>';
+  }
+  box.innerHTML = html;
+}
+
+function oraApplyFilters() {
+  var search = (document.getElementById('oraSearch').value || '').toLowerCase();
+  var list = ora.rows.filter(function(r) {
+    if (ora.statusFilter === 'OK' && r.effStatus !== 'OK') return false;
+    if (ora.statusFilter === 'WARN' && r.effStatus !== 'WARN' && r.effStatus !== 'UNKNOWN') return false;
+    if (ora.statusFilter === 'CRIT' && r.effStatus !== 'CRIT' && r.effStatus !== 'DOWN') return false;
+    if (ora.roleFilter === 'PRIMARY' && (r.isStandby || !r.role)) return false;
+    if (ora.roleFilter === 'STANDBY' && !r.isStandby) return false;
+    if (search && (r.name + ' ' + r.host + ' ' + r.env + ' ' + r.group).toLowerCase().indexOf(search) === -1) return false;
+    return true;
+  });
+  var col = ora.sortCol, asc = ora.sortAsc;
+  list.sort(function(a, b) {
+    var va = a[col], vb = b[col];
+    var na = (va === null || va === undefined || va === ''), nb = (vb === null || vb === undefined || vb === '');
+    if (na || nb) return na === nb ? 0 : (na ? 1 : -1);  // empties always last
+    if (typeof va === 'number' && typeof vb === 'number') return asc ? va - vb : vb - va;
+    var cmp = String(va).localeCompare(String(vb));
+    return asc ? cmp : -cmp;
+  });
+  ora.filtered = list;
+  oraRenderTable();
+}
+
+function oraRenderTable() {
+  var list = ora.filtered, th = ora.th;
+  setText('oraTableCount', list.length + ' of ' + ora.rows.length);
+  var ths = document.querySelectorAll('#oraTable thead th');
+  for (var t = 0; t < ths.length; t++) {
+    var on = ths[t].getAttribute('data-col') === ora.sortCol;
+    ths[t].classList.toggle('sorted', on);
+    ths[t].querySelector('.sort-arrow').textContent = on ? (ora.sortAsc ? '▲' : '▼') : '';
+  }
+  if (!list.length) {
+    document.getElementById('oraTableBody').innerHTML = '<tr><td colspan="12"><div class="empty">No databases match filter</div></td></tr>';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < list.length; i++) {
+    var r = list[i], d = r.raw;
+    var sel = r.name === ora.selected ? ' selected' : '';
+    html += '<tr class="' + sel + '" onclick="oraSelect(\'' + esc(r.name) + '\')">';
+    html += '<td class="td-name">' + esc(r.name) + (r.env ? '<span class="td-badge badge-env">' + esc(r.env) + '</span>' : '') +
+            '<span class="ora-host">' + esc(r.host) + '</span></td>';
+    html += '<td>' + (r.role ? '<span class="td-badge ' + (r.isStandby ? 'badge-standby' : 'badge-primary') + '">' + esc(r.role) + '</span>' : '<span class="td-muted">-</span>') + '</td>';
+    html += '<td><div class="td-status"><span class="dot" style="background:' + oraStatusColor(r.effStatus) + '"></span><span style="color:' +
+            oraStatusColor(r.effStatus) + ';font-weight:600">' + esc(r.status) + '</span>' + (r.stale ? '<span class="stale-tag">STALE</span>' : '') + '</div></td>';
+    html += '<td class="td-muted">' + esc(r.openMode || '-') + '</td>';
+    html += '<td class="td-right">' + fmtGB(r.allocatedGB) + '</td>';
+    html += '<td>' + (r.pctUsed !== null && r.pctUsed !== undefined ? barHtml(r.pctUsed, th.tablespaceWarnPct, th.tablespaceCritPct, fmtGB(r.usedGB) + ' / ' + fmtGB(r.maxGB) + ' (max)') : '<span class="td-muted">-</span>') + '</td>';
+    html += '<td>' + (r.maxTs !== null && r.maxTs !== undefined ? barHtml(r.maxTs, th.tablespaceWarnPct, th.tablespaceCritPct, d.tablespaces && d.tablespaces[0] ? d.tablespaces[0].name : '') : '<span class="td-muted">-</span>') + '</td>';
+    html += '<td>' + (r.fraPct !== null ? barHtml(r.fraPct, th.fraWarnPct, th.fraCritPct, d.fra ? fmtGB(d.fra.usedGB) + ' / ' + fmtGB(d.fra.sizeGB) : '') : '<span class="td-muted">-</span>') + '</td>';
+    html += '<td>' + oraAgeCell(r.lastFull, r.fullAgeH, th.fullBackupWarnHours, th.fullBackupCritHours, r.backupExpected) + '</td>';
+    html += '<td>' + oraAgeCell(r.lastArch, r.archAgeH, th.archBackupWarnHours, th.archBackupCritHours, r.backupExpected && d.logMode === 'ARCHIVELOG') + '</td>';
+    html += '<td>' + oraDgCell(d) + '</td>';
+    html += '<td class="td-muted">' + formatRelative(r.collectedAt) + '</td>';
+    html += '</tr>';
+  }
+  document.getElementById('oraTableBody').innerHTML = html;
+}
+
+function oraAgeCell(tsv, ageH, warn, crit, expected) {
+  if (!tsv) return expected ? '<span style="color:var(--fail)">none</span>' : '<span class="td-muted">-</span>';
+  var lvl = expected ? oraLevel(ageH, warn, crit) : 'OK';
+  return '<span title="' + esc(fmtTs(tsv)) + '" style="color:' + lvlColor(lvl) + '">' + formatRelative(tsv) + '</span>';
+}
+
+function oraDgCell(d) {
+  var th = ora.th;
+  if (d.standby) {
+    var sb = d.standby;
+    var lvl = sb.mrpStatus === 'NOT RUNNING' || sb.gap ? 'CRIT' : oraLevel(Math.max(sb.applyLagSec || 0, sb.transportLagSec || 0), th.lagWarnSec, th.lagCritSec);
+    return '<span style="color:' + lvlColor(lvl) + '" title="transport ' + esc(sb.transportLag || '-') + ' / apply ' + esc(sb.applyLag || '-') + '">apply ' +
+      (sb.applyLagSec !== null && sb.applyLagSec !== undefined ? fmtSec(sb.applyLagSec) : '-') + '</span>' +
+      ' <span class="td-muted">· MRP ' + esc(sb.mrpStatus || '-') + '</span>';
+  }
+  if (d.dataguard && d.dataguard.length) {
+    var out = [];
+    for (var i = 0; i < d.dataguard.length; i++) {
+      var g = d.dataguard[i];
+      var bad = g.status !== 'VALID' || g.error;
+      out.push('<span style="color:' + (bad ? 'var(--fail)' : 'var(--ok)') + '">→ ' + esc(g.standby) + ' ' + esc(g.status) + '</span>' +
+        (g.seqBehind !== null && g.seqBehind !== undefined ? ' <span class="td-muted">Δseq ' + g.seqBehind + '</span>' : ''));
+    }
+    return out.join('<br>');
+  }
+  return '<span class="td-muted">-</span>';
+}
+
+function oraFilterStatus(s) {
+  ora.statusFilter = s;
+  var items = document.querySelectorAll('#oraSidebarStats .sidebar-stat');
+  for (var i = 0; i < items.length; i++) items[i].classList.toggle('active', items[i].getAttribute('data-filter') === s);
+  oraApplyFilters();
+}
+
+function oraFilterRole(role) {
+  ora.roleFilter = role;
+  var btns = document.querySelectorAll('#oraRoleFilter .filter-btn');
+  for (var i = 0; i < btns.length; i++) btns[i].classList.toggle('active', btns[i].getAttribute('data-role') === role);
+  oraApplyFilters();
+}
+
+function oraSortBy(col) {
+  if (ora.sortCol === col) ora.sortAsc = !ora.sortAsc;
+  else { ora.sortCol = col; ora.sortAsc = (col === 'name' || col === 'role' || col === 'openMode'); }
+  oraApplyFilters();
+}
+
+// ── Detail panel ─────────────────────────────────────────────────
+
+function oraSelect(name) {
+  if (ora.selected === name) { oraCloseDetail(); return; }
+  ora.selected = name;
+  oraRenderTable();
+  oraRenderDetail(name, false);
+  document.getElementById('oraDetailPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function oraCloseDetail() {
+  ora.selected = '';
+  document.getElementById('oraDetailPanel').classList.add('hidden');
+  oraRenderTable();
+}
+
+function oraRenderDetail(name, keepTrend) {
+  var r = null;
+  for (var i = 0; i < ora.rows.length; i++) if (ora.rows[i].name === name) r = ora.rows[i];
+  if (!r) return oraCloseDetail();
+  var d = r.raw, th = ora.th;
+  document.getElementById('oraDetailPanel').classList.remove('hidden');
+  setText('oraDetailTitle', d.name + (d.dbUniqueName && d.dbUniqueName !== d.name ? ' (' + d.dbUniqueName + ')' : '') + ' — ' + (d.role || 'unknown role'));
+
+  var trendHtml = keepTrend && document.getElementById('oraTrend') ? document.getElementById('oraTrend').innerHTML : '<div class="empty">Loading...</div>';
+  var html = '';
+
+  // Overview
+  var size = d.size || {};
+  html += oraBox('Overview', kvHtml([
+    ['Status', '<b style="color:' + oraStatusColor(r.effStatus) + '">' + esc(d.status) + '</b>' + (r.stale ? ' <span class="stale-tag">STALE</span>' : '')],
+    ['Host / Instance', esc((d.hostName || '-') + ' / ' + (d.instanceName || '-'))],
+    ['Version', esc(d.version || '-')],
+    ['Open mode', esc(d.openMode || '-')],
+    ['Log mode', esc((d.logMode || '-') + (d.forceLogging === 'YES' ? ' · FORCE LOGGING' : ''))],
+    ['Protection', esc(d.protectionMode || '-')],
+    ['Switchover', esc(d.switchoverStatus || '-')],
+    ['Started', d.startupTime ? esc(fmtTs(d.startupTime)) + ' (' + formatRelative(d.startupTime) + ')' : '-'],
+    ['Datafiles', fmtGB(size.dataGB)],
+    ['Tempfiles / Redo', fmtGB(size.tempGB) + ' / ' + fmtGB(size.redoGB)],
+    ['Used / Max', size.usedGB !== undefined ? fmtGB(size.usedGB) + ' / ' + fmtGB(size.maxGB) + (size.pctUsed !== null && size.pctUsed !== undefined ? ' (' + size.pctUsed + '%)' : '') : '-'],
+    ['Free (allocated)', size.freeGB !== undefined ? fmtGB(size.freeGB) : '-'],
+    ['Collected', esc(fmtTs(d.collectedAt)) + ' (' + formatRelative(d.collectedAt) + ')']
+  ]));
+
+  // Issues
+  var iss = (d.issues || []).slice();
+  if (d.connectError) iss = [{ level: 'CRIT', msg: d.connectError }];
+  html += oraBox('Issues (' + iss.length + ')', iss.length ? iss.map(function(x) {
+    return '<div class="kv" style="grid-template-columns:60px 1fr"><div style="color:' + (x.level === 'CRIT' ? 'var(--fail)' : 'var(--warn)') + ';font-weight:700">' + esc(x.level) + '</div><div>' + esc(x.msg) + '</div></div>';
+  }).join('') : '<div class="empty" style="padding:20px">No issues 🎉</div>');
+
+  // Tablespaces
+  var tbs = d.tablespaces || [];
+  var tsHtml = tbs.length ? '<table class="history-table"><thead><tr><th>Tablespace</th><th>Used</th><th>Alloc</th><th>Max</th><th style="min-width:140px">%</th></tr></thead><tbody>' +
+    tbs.map(function(t) {
+      return '<tr><td>' + esc(t.name) + (t.contents === 'TEMPORARY' ? ' <span class="td-muted">(temp)</span>' : '') + '</td><td class="td-right">' + fmtGB(t.usedGB) +
+        '</td><td class="td-right">' + fmtGB(t.allocatedGB) + '</td><td class="td-right">' + fmtGB(t.maxGB) + '</td><td>' + barHtml(t.pctUsed, th.tablespaceWarnPct, th.tablespaceCritPct) + '</td></tr>';
+    }).join('') + '</tbody></table>'
+    : '<div class="empty" style="padding:20px">' + (d.openMode && d.openMode.indexOf('READ') === 0 ? 'No data' : 'Database not open (mounted standby) — tablespace usage unavailable') + '</div>';
+  html += oraBox('Tablespaces (' + tbs.length + ')', tsHtml);
+
+  // Backup
+  var b = d.backup || {};
+  var bk = kvHtml([
+    ['Last full', b.lastFull ? esc(fmtTs(b.lastFull)) + ' · ' + oraAgeCell(b.lastFull, b.fullAgeH, th.fullBackupWarnHours, th.fullBackupCritHours, r.backupExpected) : (r.backupExpected ? '<span style="color:var(--fail)">none</span>' : '-')],
+    ['Last incremental', b.lastIncr ? esc(fmtTs(b.lastIncr)) + ' · ' + formatRelative(b.lastIncr) : '-'],
+    ['Last archivelog', b.lastArch ? esc(fmtTs(b.lastArch)) + ' · ' + oraAgeCell(b.lastArch, b.archAgeH, th.archBackupWarnHours, th.archBackupCritHours, r.backupExpected) : '-'],
+    ['Last job', esc((b.lastType || '-') + ' ' + (b.lastStatus || ''))],
+    ['Failed (14d)', b.failed14d ? '<span style="color:var(--fail)">' + b.failed14d + '</span>' : '0'],
+    ['FRA', d.fra ? fmtGB(d.fra.usedGB) + ' / ' + fmtGB(d.fra.sizeGB) + ' · reclaimable ' + fmtGB(d.fra.reclaimableGB) : 'not configured']
+  ]);
+  if (d.fra) bk += '<div style="padding:8px 12px">' + barHtml(d.fra.pctUsed, th.fraWarnPct, th.fraCritPct, 'FRA used (excl. reclaimable)') + '</div>';
+  var jobs = d.backups || [];
+  if (jobs.length) {
+    bk += '<table class="history-table"><thead><tr><th>Start</th><th>Type</th><th>Status</th><th>Dur</th><th>In</th><th>Out</th></tr></thead><tbody>' +
+      jobs.map(function(j) {
+        var ok = j.status && j.status.indexOf('COMPLETED') === 0;
+        var col = ok ? 'var(--ok)' : (j.status === 'RUNNING' ? 'var(--accent)' : 'var(--fail)');
+        return '<tr><td style="white-space:nowrap">' + esc(fmtTs(j.start)) + '</td><td>' + esc(j.type) + '</td><td style="color:' + col + '">' + esc(j.status) +
+          '</td><td class="td-right">' + (j.durationMin || 0) + 'm</td><td class="td-right">' + fmtGB(j.inputGB) + '</td><td class="td-right">' + fmtGB(j.outputGB) + '</td></tr>';
+      }).join('') + '</tbody></table>';
+  }
+  html += oraBox('Backup (RMAN)', bk);
+
+  // Data Guard
+  var dg = '';
+  if (d.standby) {
+    var sb = d.standby;
+    dg = kvHtml([
+      ['Transport lag', '<span style="color:' + lvlColor(oraLevel(sb.transportLagSec, th.lagWarnSec, th.lagCritSec)) + '">' + esc(sb.transportLag || '-') + '</span>'],
+      ['Apply lag', '<span style="color:' + lvlColor(oraLevel(sb.applyLagSec, th.lagWarnSec, th.lagCritSec)) + '">' + esc(sb.applyLag || '-') + '</span>'],
+      ['MRP', '<span style="color:' + (sb.mrpStatus === 'NOT RUNNING' ? 'var(--fail)' : 'var(--ok)') + '">' + esc(sb.mrpStatus || '-') + '</span>' + (sb.mrpSeq ? ' (seq ' + sb.mrpSeq + ')' : '')],
+      ['Last received seq', esc(sb.lastReceivedSeq)],
+      ['Last applied seq', esc(sb.lastAppliedSeq)],
+      ['Archive gap', sb.gap ? '<span style="color:var(--fail)">' + sb.gap + '</span>' : 'none'],
+      ['Primary', esc(d.pairWith || '-')]
+    ]);
+  } else if (d.dataguard && d.dataguard.length) {
+    dg = '<table class="history-table"><thead><tr><th>Dest</th><th>Standby</th><th>Status</th><th>Mode</th><th>Gap</th><th>Applied / Current</th></tr></thead><tbody>' +
+      d.dataguard.map(function(g) {
+        var bad = g.status !== 'VALID' || g.error;
+        return '<tr><td>' + g.destId + '</td><td>' + esc(g.standby) + '</td><td style="color:' + (bad ? 'var(--fail)' : 'var(--ok)') + '">' + esc(g.status) +
+          (g.error ? '<br><span style="font-size:11px">' + esc(g.error) + '</span>' : '') + '</td><td>' + esc(g.recoveryMode || g.databaseMode || '') + '</td><td>' + esc(g.gapStatus || '-') +
+          '</td><td class="td-right">' + esc(g.appliedSeq) + ' / ' + esc(g.currentSeq) + '</td></tr>';
+      }).join('') + '</tbody></table>';
+  } else {
+    dg = '<div class="empty" style="padding:20px">No standby configured</div>';
+  }
+  html += oraBox('Data Guard / Standby', dg);
+
+  // Size trend
+  html += oraBox('Size trend (30 days)', '<div id="oraTrend">' + trendHtml + '</div>');
+
+  // Collector errors
+  if (d.errors && d.errors.length) html += oraBox('Collector warnings', d.errors.map(function(e) { return '<div class="kv" style="grid-template-columns:1fr"><div>' + esc(e) + '</div></div>'; }).join(''));
+
+  document.getElementById('oraDetailBody').innerHTML = html;
+
+  if (!keepTrend) {
+    fetchOracleHistory(name, 30, function(err, h) {
+      var el = document.getElementById('oraTrend');
+      if (!el || ora.selected !== name) return;
+      el.innerHTML = err ? '<div class="empty">Error loading</div>' : sparkHtml(h.points || []);
+    });
+  }
+}
+
+function sparkHtml(points) {
+  if (points.length < 2) return '<div class="empty" style="padding:20px">Not enough history yet (' + points.length + ' day)</div>';
+  var W = 400, H = 90, P = 4;
+  var max = 0, min = Infinity;
+  points.forEach(function(p) {
+    var a = +p.allocatedGB || 0, u = +p.usedGB || 0;
+    max = Math.max(max, a, u);
+    if (a) min = Math.min(min, a);
+    if (u) min = Math.min(min, u);
+  });
+  if (!isFinite(min)) min = 0;
+  min = min * 0.95;
+  var span = (max - min) || 1;
+  function line(key) {
+    return points.map(function(p, i) {
+      var x = P + i * (W - 2 * P) / (points.length - 1);
+      var y = H - P - ((+p[key] || min) - min) / span * (H - 2 * P);
+      return (i ? 'L' : 'M') + x.toFixed(1) + ' ' + y.toFixed(1);
+    }).join(' ');
+  }
+  var first = points[0], last = points[points.length - 1];
+  var growth = (+last.usedGB || 0) - (+first.usedGB || 0);
+  return '<svg class="spark" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none">' +
+    '<path d="' + line('allocatedGB') + '" fill="none" stroke="var(--text-muted)" stroke-width="1.5" stroke-dasharray="4 3" vector-effect="non-scaling-stroke"/>' +
+    '<path d="' + line('usedGB') + '" fill="none" stroke="var(--accent)" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>' +
+    kvHtml([
+      ['Period', esc(first.date + ' → ' + last.date)],
+      ['Allocated', fmtGB(+last.allocatedGB) + ' <span class="td-muted">(dashed)</span>'],
+      ['Used', fmtGB(+last.usedGB) + ' <span class="td-muted">(blue)</span>'],
+      ['Growth (used)', (growth >= 0 ? '+' : '') + fmtGB(growth) + ' · ~' + fmtGB(growth / Math.max(1, points.length - 1)) + '/day']
+    ]);
+}
+
+/** Demo only: shift every YYMMDD.HHmmss value so the sample looks freshly collected. */
+function oraDemoRebase(data) {
+  var base = parseTs(data.timestamp);
+  if (!base) return;
+  var shift = Date.now() - base.getTime();
+  function p(n) { return (n < 10 ? '0' : '') + n; }
+  function walk(o) {
+    for (var k in o) {
+      var v = o[k];
+      if (typeof v === 'string' && /^\d{6}\.\d{6}$/.test(v)) {
+        var d = new Date(parseTs(v).getTime() + shift);
+        o[k] = p(d.getFullYear() % 100) + p(d.getMonth() + 1) + p(d.getDate()) + '.' + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds());
+      } else if (v && typeof v === 'object') walk(v);
+    }
+  }
+  walk(data);
+}
+
+function oraDemoHistory(db, days) {
+  var r = null;
+  for (var i = 0; i < ora.rows.length; i++) if (ora.rows[i].name === db) r = ora.rows[i];
+  var pts = [], a = r && r.allocatedGB || 100, u = r && r.usedGB || a * 0.7;
+  for (var d = days - 1; d >= 0; d--) {
+    var dt = new Date(Date.now() - d * 86400000);
+    var f = 1 - d * 0.004;
+    pts.push({ date: dt.toISOString().substring(0, 10), allocatedGB: +(a * (d > 12 ? 0.97 : 1)).toFixed(1), usedGB: +(u * f).toFixed(1) });
+  }
+  return { db: db, days: days, points: pts };
+}
+
+// ── Oracle helpers ───────────────────────────────────────────────
+
+function oraBox(title, body) {
+  return '<div class="ora-box"><div class="ora-box-title">' + title + '</div><div class="ora-box-body">' + body + '</div></div>';
+}
+
+function kvHtml(pairs) {
+  return '<div class="kv">' + pairs.map(function(p) {
+    return '<div>' + p[0] + '</div><div>' + (p[1] === null || p[1] === undefined || p[1] === '' ? '-' : p[1]) + '</div>';
+  }).join('') + '</div>';
+}
+
+function barHtml(pct, warn, crit, title) {
+  pct = +pct || 0;
+  var col = lvlColor(oraLevel(pct, warn, crit));
+  return '<div class="bar-cell" title="' + esc(title || '') + '"><div class="bar"><div class="bar-fill" style="width:' + Math.min(100, pct) +
+    '%;background:' + col + '"></div></div><span class="bar-pct" style="color:' + col + '">' + pct.toFixed(1) + '%</span></div>';
+}
+
+function oraLevel(v, warn, crit) {
+  if (v === null || v === undefined) return 'OK';
+  if (v >= crit) return 'CRIT';
+  if (v >= warn) return 'WARN';
+  return 'OK';
+}
+
+function lvlColor(lvl) {
+  return lvl === 'CRIT' ? 'var(--fail)' : lvl === 'WARN' ? 'var(--warn)' : 'var(--ok)';
+}
+
+function oraStatusColor(s) {
+  if (s === 'OK') return 'var(--ok)';
+  if (s === 'WARN') return 'var(--warn)';
+  if (s === 'CRIT' || s === 'DOWN') return 'var(--fail)';
+  return 'var(--text-muted)';
+}
+
+function fmtGB(v) {
+  if (v === null || v === undefined || v === '' || isNaN(v)) return '-';
+  v = +v;
+  if (Math.abs(v) >= 1024) return (v / 1024).toFixed(2) + ' TB';
+  if (Math.abs(v) >= 100) return v.toFixed(0) + ' GB';
+  return v.toFixed(1) + ' GB';
+}
+
+function fmtSec(s) {
+  if (s === null || s === undefined) return '-';
+  if (s < 60) return s + 's';
+  if (s < 3600) return Math.floor(s / 60) + 'm ' + (s % 60) + 's';
+  if (s < 86400) return Math.floor(s / 3600) + 'h ' + Math.floor((s % 3600) / 60) + 'm';
+  return Math.floor(s / 86400) + 'd ' + Math.floor((s % 86400) / 3600) + 'h';
+}
+
+/** YYMMDD.HHmmss -> 'YYYY-MM-DD HH:mm' */
+function fmtTs(t) {
+  var dt = parseTs(t);
+  if (!dt) return t || '-';
+  function p(n) { return (n < 10 ? '0' : '') + n; }
+  return dt.getFullYear() + '-' + p(dt.getMonth() + 1) + '-' + p(dt.getDate()) + ' ' + p(dt.getHours()) + ':' + p(dt.getMinutes());
+}
+
+function parseTs(t) {
+  if (!t) return null;
+  var parts = String(t).split(String(t).indexOf('.') > -1 ? '.' : ':');
+  if (parts.length < 2 || parts[0].length !== 6 || parts[1].length !== 6) return null;
+  var d = parts[0], h = parts[1];
+  return new Date(2000 + +d.substring(0, 2), +d.substring(2, 4) - 1, +d.substring(4, 6), +h.substring(0, 2), +h.substring(2, 4), +h.substring(4, 6));
+}
+
+function tsAgeSec(t) {
+  var dt = parseTs(t);
+  return dt ? (Date.now() - dt) / 1000 : NaN;
+}
+
+function setText(id, v) { document.getElementById(id).textContent = (v === null || v === undefined) ? '-' : v; }
+
+// ═══════════════════════════════════════════════════════════════════
 // Init
 // ═══════════════════════════════════════════════════════════════════
 
 (function init() {
+  // Restore view (#oracle in URL wins)
+  var view = 'scripts';
+  try { view = localStorage.getItem('dashboard_view') || 'scripts'; } catch(e) {}
+  if (location.hash === '#oracle' || ORA_DEMO) view = 'oracle';
+  state.view = view;
+
   // Try cache
   try {
     var cached = localStorage.getItem('dashboard_cache');
     if (cached) onDataLoaded(JSON.parse(cached));
+    var oraCached = ORA_DEMO ? null : localStorage.getItem('oracle_cache');
+    if (oraCached) oraOnDataLoaded(JSON.parse(oraCached));
   } catch(e) {}
+  switchView(view);
 
   // Fetch fresh
   fetchStatus(function(err, data) {

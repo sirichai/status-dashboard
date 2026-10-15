@@ -1,0 +1,754 @@
+{
+ "timestamp": "261015.090000",
+ "thresholds": {
+  "tablespaceWarnPct": 85,
+  "tablespaceCritPct": 95,
+  "fraWarnPct": 80,
+  "fraCritPct": 90,
+  "fullBackupWarnHours": 192,
+  "fullBackupCritHours": 336,
+  "incrBackupWarnHours": 36,
+  "archBackupWarnHours": 6,
+  "archBackupCritHours": 24,
+  "lagWarnSec": 300,
+  "lagCritSec": 1800
+ },
+ "databases": [
+  {
+   "collectedAt": "261015.085700",
+   "errors": [],
+   "logMode": "ARCHIVELOG",
+   "forceLogging": "YES",
+   "instanceStatus": "OPEN",
+   "switchoverStatus": "TO STANDBY",
+   "protectionMode": "MAXIMUM PERFORMANCE",
+   "version": "19.0.0.0.0",
+   "startupTime": "260904.090000",
+   "backupExpected": true,
+   "name": "PRODDB",
+   "group": "ERP",
+   "env": "PROD",
+   "pairWith": "PRODDB_STBY",
+   "dbName": "PRODDB",
+   "dbUniqueName": "PRODDB",
+   "role": "PRIMARY",
+   "openMode": "READ WRITE",
+   "instanceName": "PRODDB1",
+   "hostName": "db-prod-01",
+   "size": {
+    "dataGB": 2457,
+    "tempGB": 64,
+    "redoGB": 12,
+    "allocatedGB": 2533,
+    "usedGB": 2336.5,
+    "maxGB": 3024,
+    "freeGB": 120.5,
+    "pctUsed": 77.3
+   },
+   "tablespaces": [
+    {
+     "name": "ERP_DATA",
+     "contents": "PERMANENT",
+     "usedGB": 1702,
+     "allocatedGB": 1750,
+     "maxGB": 2000,
+     "pctUsed": 85.1
+    },
+    {
+     "name": "ERP_INDEX",
+     "contents": "PERMANENT",
+     "usedGB": 590,
+     "allocatedGB": 640,
+     "maxGB": 900,
+     "pctUsed": 65.6
+    },
+    {
+     "name": "SYSAUX",
+     "contents": "PERMANENT",
+     "usedGB": 28,
+     "allocatedGB": 32,
+     "maxGB": 64,
+     "pctUsed": 43.8
+    },
+    {
+     "name": "SYSTEM",
+     "contents": "PERMANENT",
+     "usedGB": 4.1,
+     "allocatedGB": 5,
+     "maxGB": 32,
+     "pctUsed": 12.8
+    },
+    {
+     "name": "UNDOTBS1",
+     "contents": "UNDO",
+     "usedGB": 12,
+     "allocatedGB": 30,
+     "maxGB": 32,
+     "pctUsed": 37.5
+    },
+    {
+     "name": "USERS",
+     "contents": "PERMANENT",
+     "usedGB": 0.4,
+     "allocatedGB": 1,
+     "maxGB": 32,
+     "pctUsed": 1.2
+    },
+    {
+     "name": "TEMP",
+     "contents": "TEMPORARY",
+     "usedGB": 2,
+     "allocatedGB": 64,
+     "maxGB": 64,
+     "pctUsed": 3.1
+    }
+   ],
+   "maxTablespacePct": 85.1,
+   "fra": {
+    "dest": "+FRA",
+    "sizeGB": 1000,
+    "usedGB": 640,
+    "reclaimableGB": 210,
+    "files": 1820,
+    "pctUsed": 43.0
+   },
+   "backups": [
+    {
+     "type": "ARCHIVELOG",
+     "status": "COMPLETED",
+     "start": "261015.074800",
+     "end": "261015.075400",
+     "inputGB": 18,
+     "outputGB": 7,
+     "durationMin": 6,
+     "device": "DISK"
+    },
+    {
+     "type": "ARCHIVELOG",
+     "status": "COMPLETED",
+     "start": "261015.034800",
+     "end": "261015.035500",
+     "inputGB": 22,
+     "outputGB": 8,
+     "durationMin": 7,
+     "device": "DISK"
+    },
+    {
+     "type": "DB INCR",
+     "status": "COMPLETED",
+     "start": "261015.010000",
+     "end": "261015.014200",
+     "inputGB": 180,
+     "outputGB": 61,
+     "durationMin": 42,
+     "device": "DISK"
+    },
+    {
+     "type": "ARCHIVELOG",
+     "status": "COMPLETED",
+     "start": "261014.234800",
+     "end": "261014.235400",
+     "inputGB": 15,
+     "outputGB": 6,
+     "durationMin": 6,
+     "device": "DISK"
+    },
+    {
+     "type": "DB INCR",
+     "status": "COMPLETED",
+     "start": "261014.010000",
+     "end": "261014.014000",
+     "inputGB": 170,
+     "outputGB": 58,
+     "durationMin": 40,
+     "device": "DISK"
+    },
+    {
+     "type": "DB FULL",
+     "status": "COMPLETED",
+     "start": "261011.010000",
+     "end": "261011.043200",
+     "inputGB": 2336,
+     "outputGB": 905,
+     "durationMin": 212,
+     "device": "DISK"
+    }
+   ],
+   "backup": {
+    "lastFull": "261011.043000",
+    "lastIncr": "261015.014200",
+    "lastArch": "261015.075400",
+    "fullAgeH": 100.5,
+    "incrAgeH": 7.3,
+    "archAgeH": 1.1,
+    "lastStatus": "COMPLETED",
+    "lastType": "ARCHIVELOG",
+    "failed14d": 0
+   },
+   "dataguard": [
+    {
+     "destId": 2,
+     "standby": "PRODDB_STBY",
+     "status": "VALID",
+     "databaseMode": "MOUNTED-STANDBY",
+     "recoveryMode": "MANAGED REAL TIME APPLY",
+     "gapStatus": "NO GAP",
+     "error": null,
+     "archivedSeq": 88412,
+     "appliedSeq": 88411,
+     "currentSeq": 88413,
+     "seqBehind": 2
+    }
+   ],
+   "issues": [
+    {
+     "level": "WARN",
+     "msg": "Tablespace ERP_DATA 85.1% used"
+    }
+   ],
+   "status": "WARN"
+  },
+  {
+   "collectedAt": "261015.085700",
+   "errors": [],
+   "logMode": "ARCHIVELOG",
+   "forceLogging": "YES",
+   "instanceStatus": "OPEN",
+   "switchoverStatus": "NOT ALLOWED",
+   "protectionMode": "MAXIMUM PERFORMANCE",
+   "version": "19.0.0.0.0",
+   "startupTime": "260904.090000",
+   "backupExpected": false,
+   "name": "PRODDB_STBY",
+   "group": "ERP",
+   "env": "PROD",
+   "pairWith": "PRODDB",
+   "dbName": "PRODDB",
+   "dbUniqueName": "PRODDB_STBY",
+   "role": "PHYSICAL STANDBY",
+   "openMode": "MOUNTED",
+   "instanceName": "PRODDB",
+   "hostName": "db-dr-01",
+   "size": {
+    "dataGB": 2457,
+    "tempGB": 64,
+    "redoGB": 12,
+    "allocatedGB": 2533
+   },
+   "fra": {
+    "dest": "/u03/fra",
+    "sizeGB": 800,
+    "usedGB": 520,
+    "reclaimableGB": 60,
+    "files": 930,
+    "pctUsed": 57.5
+   },
+   "backups": [],
+   "backup": {
+    "lastFull": "",
+    "lastIncr": "",
+    "lastArch": "",
+    "fullAgeH": null,
+    "incrAgeH": null,
+    "archAgeH": null,
+    "lastStatus": null,
+    "lastType": null,
+    "failed14d": 0
+   },
+   "standby": {
+    "side": "STANDBY",
+    "transportLag": "+00 00:00:04",
+    "applyLag": "+00 00:00:41",
+    "transportLagSec": 4,
+    "applyLagSec": 41,
+    "mrpStatus": "APPLYING_LOG",
+    "mrpSeq": 88412,
+    "lastReceivedSeq": 88412,
+    "lastAppliedSeq": 88411,
+    "gap": 0
+   },
+   "issues": [],
+   "status": "OK"
+  },
+  {
+   "collectedAt": "261015.085700",
+   "errors": [],
+   "logMode": "ARCHIVELOG",
+   "forceLogging": "YES",
+   "instanceStatus": "OPEN",
+   "switchoverStatus": "TO STANDBY",
+   "protectionMode": "MAXIMUM PERFORMANCE",
+   "version": "19.0.0.0.0",
+   "startupTime": "260904.090000",
+   "backupExpected": true,
+   "name": "HRDB",
+   "group": "HR",
+   "env": "PROD",
+   "pairWith": "HRDB_STBY",
+   "dbName": "HRDB",
+   "dbUniqueName": "HRDB",
+   "role": "PRIMARY",
+   "openMode": "READ WRITE",
+   "instanceName": "HRDB",
+   "hostName": "db-prod-02",
+   "size": {
+    "dataGB": 410,
+    "tempGB": 32,
+    "redoGB": 6,
+    "allocatedGB": 448,
+    "usedGB": 388,
+    "maxGB": 420,
+    "freeGB": 22,
+    "pctUsed": 92.4
+   },
+   "tablespaces": [
+    {
+     "name": "HR_DATA",
+     "contents": "PERMANENT",
+     "usedGB": 352,
+     "allocatedGB": 360,
+     "maxGB": 365,
+     "pctUsed": 96.4
+    },
+    {
+     "name": "SYSAUX",
+     "contents": "PERMANENT",
+     "usedGB": 18,
+     "allocatedGB": 20,
+     "maxGB": 32,
+     "pctUsed": 56.2
+    },
+    {
+     "name": "SYSTEM",
+     "contents": "PERMANENT",
+     "usedGB": 3,
+     "allocatedGB": 4,
+     "maxGB": 32,
+     "pctUsed": 9.4
+    },
+    {
+     "name": "UNDOTBS1",
+     "contents": "UNDO",
+     "usedGB": 5,
+     "allocatedGB": 20,
+     "maxGB": 20,
+     "pctUsed": 25.0
+    },
+    {
+     "name": "TEMP",
+     "contents": "TEMPORARY",
+     "usedGB": 1,
+     "allocatedGB": 32,
+     "maxGB": 32,
+     "pctUsed": 3.1
+    }
+   ],
+   "maxTablespacePct": 96.4,
+   "fra": {
+    "dest": "+FRA",
+    "sizeGB": 300,
+    "usedGB": 262,
+    "reclaimableGB": 8,
+    "files": 640,
+    "pctUsed": 84.7
+   },
+   "backups": [
+    {
+     "type": "ARCHIVELOG",
+     "status": "FAILED",
+     "start": "261015.070000",
+     "end": "261015.070100",
+     "inputGB": 0,
+     "outputGB": 0,
+     "durationMin": 1,
+     "device": "DISK"
+    },
+    {
+     "type": "ARCHIVELOG",
+     "status": "COMPLETED",
+     "start": "261015.010000",
+     "end": "261015.010300",
+     "inputGB": 5,
+     "outputGB": 2,
+     "durationMin": 3,
+     "device": "DISK"
+    },
+    {
+     "type": "DB INCR",
+     "status": "COMPLETED",
+     "start": "261014.130000",
+     "end": "261014.131500",
+     "inputGB": 40,
+     "outputGB": 12,
+     "durationMin": 15,
+     "device": "DISK"
+    },
+    {
+     "type": "DB FULL",
+     "status": "COMPLETED",
+     "start": "261009.030000",
+     "end": "261009.040000",
+     "inputGB": 388,
+     "outputGB": 140,
+     "durationMin": 60,
+     "device": "DISK"
+    }
+   ],
+   "backup": {
+    "lastFull": "261009.040000",
+    "lastIncr": "261014.131200",
+    "lastArch": "261015.010600",
+    "fullAgeH": 149,
+    "incrAgeH": 19.8,
+    "archAgeH": 7.9,
+    "lastStatus": "FAILED",
+    "lastType": "ARCHIVELOG",
+    "failed14d": 1
+   },
+   "dataguard": [
+    {
+     "destId": 2,
+     "standby": "HRDB_STBY",
+     "status": "VALID",
+     "databaseMode": "OPEN_READ-ONLY",
+     "recoveryMode": "MANAGED REAL TIME APPLY",
+     "gapStatus": "NO GAP",
+     "error": null,
+     "archivedSeq": 20311,
+     "appliedSeq": 20290,
+     "currentSeq": 20312,
+     "seqBehind": 22
+    }
+   ],
+   "issues": [
+    {
+     "level": "CRIT",
+     "msg": "Tablespace HR_DATA 96.4% used"
+    },
+    {
+     "level": "WARN",
+     "msg": "FRA 84.7% used"
+    },
+    {
+     "level": "WARN",
+     "msg": "Last archivelog backup 8h ago"
+    },
+    {
+     "level": "CRIT",
+     "msg": "Last backup job (ARCHIVELOG) FAILED"
+    }
+   ],
+   "status": "CRIT"
+  },
+  {
+   "collectedAt": "261015.085700",
+   "errors": [],
+   "logMode": "ARCHIVELOG",
+   "forceLogging": "YES",
+   "instanceStatus": "OPEN",
+   "switchoverStatus": "NOT ALLOWED",
+   "protectionMode": "MAXIMUM PERFORMANCE",
+   "version": "19.0.0.0.0",
+   "startupTime": "260904.090000",
+   "backupExpected": false,
+   "name": "HRDB_STBY",
+   "group": "HR",
+   "env": "PROD",
+   "pairWith": "HRDB",
+   "dbName": "HRDB",
+   "dbUniqueName": "HRDB_STBY",
+   "role": "PHYSICAL STANDBY",
+   "openMode": "READ ONLY WITH APPLY",
+   "instanceName": "HRDB",
+   "hostName": "db-dr-02",
+   "size": {
+    "dataGB": 410,
+    "tempGB": 32,
+    "redoGB": 6,
+    "allocatedGB": 448,
+    "usedGB": 388,
+    "maxGB": 420,
+    "freeGB": 22,
+    "pctUsed": 92.4
+   },
+   "tablespaces": [
+    {
+     "name": "HR_DATA",
+     "contents": "PERMANENT",
+     "usedGB": 352,
+     "allocatedGB": 360,
+     "maxGB": 365,
+     "pctUsed": 96.4
+    },
+    {
+     "name": "SYSAUX",
+     "contents": "PERMANENT",
+     "usedGB": 18,
+     "allocatedGB": 20,
+     "maxGB": 32,
+     "pctUsed": 56.2
+    },
+    {
+     "name": "SYSTEM",
+     "contents": "PERMANENT",
+     "usedGB": 3,
+     "allocatedGB": 4,
+     "maxGB": 32,
+     "pctUsed": 9.4
+    }
+   ],
+   "maxTablespacePct": 96.4,
+   "fra": {
+    "dest": "/u03/fra",
+    "sizeGB": 200,
+    "usedGB": 90,
+    "reclaimableGB": 20,
+    "files": 210,
+    "pctUsed": 35.0
+   },
+   "backups": [],
+   "backup": {
+    "lastFull": "",
+    "lastIncr": "",
+    "lastArch": "",
+    "fullAgeH": null,
+    "incrAgeH": null,
+    "archAgeH": null,
+    "lastStatus": null,
+    "lastType": null,
+    "failed14d": 0
+   },
+   "standby": {
+    "side": "STANDBY",
+    "transportLag": "+00 00:00:09",
+    "applyLag": "+00 00:42:15",
+    "transportLagSec": 9,
+    "applyLagSec": 2535,
+    "mrpStatus": "APPLYING_LOG",
+    "mrpSeq": 20291,
+    "lastReceivedSeq": 20311,
+    "lastAppliedSeq": 20290,
+    "gap": 0
+   },
+   "issues": [
+    {
+     "level": "CRIT",
+     "msg": "Apply lag 42m15s"
+    }
+   ],
+   "status": "CRIT"
+  },
+  {
+   "collectedAt": "261015.085700",
+   "errors": [],
+   "logMode": "ARCHIVELOG",
+   "forceLogging": "YES",
+   "instanceStatus": "OPEN",
+   "switchoverStatus": "NOT ALLOWED",
+   "protectionMode": "MAXIMUM PERFORMANCE",
+   "version": "19.0.0.0.0",
+   "startupTime": "260904.090000",
+   "backupExpected": true,
+   "name": "UATDB",
+   "group": "ERP",
+   "env": "UAT",
+   "dbName": "UATDB",
+   "dbUniqueName": "UATDB",
+   "role": "PRIMARY",
+   "openMode": "READ WRITE",
+   "instanceName": "UATDB",
+   "hostName": "db-uat-01",
+   "size": {
+    "dataGB": 1210,
+    "tempGB": 32,
+    "redoGB": 3,
+    "allocatedGB": 1245,
+    "usedGB": 980,
+    "maxGB": 1600,
+    "freeGB": 230,
+    "pctUsed": 61.2
+   },
+   "tablespaces": [
+    {
+     "name": "ERP_DATA",
+     "contents": "PERMANENT",
+     "usedGB": 760,
+     "allocatedGB": 900,
+     "maxGB": 1200,
+     "pctUsed": 63.3
+    },
+    {
+     "name": "ERP_INDEX",
+     "contents": "PERMANENT",
+     "usedGB": 200,
+     "allocatedGB": 260,
+     "maxGB": 350,
+     "pctUsed": 57.1
+    },
+    {
+     "name": "SYSAUX",
+     "contents": "PERMANENT",
+     "usedGB": 14,
+     "allocatedGB": 20,
+     "maxGB": 32,
+     "pctUsed": 43.8
+    },
+    {
+     "name": "SYSTEM",
+     "contents": "PERMANENT",
+     "usedGB": 3,
+     "allocatedGB": 4,
+     "maxGB": 32,
+     "pctUsed": 9.4
+    },
+    {
+     "name": "TEMP",
+     "contents": "TEMPORARY",
+     "usedGB": 0.5,
+     "allocatedGB": 32,
+     "maxGB": 32,
+     "pctUsed": 1.6
+    }
+   ],
+   "maxTablespacePct": 63.3,
+   "fra": {
+    "dest": "/u03/fra",
+    "sizeGB": 500,
+    "usedGB": 120,
+    "reclaimableGB": 40,
+    "files": 88,
+    "pctUsed": 16.0
+   },
+   "backups": [
+    {
+     "type": "ARCHIVELOG",
+     "status": "COMPLETED",
+     "start": "261015.060000",
+     "end": "261015.060400",
+     "inputGB": 6,
+     "outputGB": 2,
+     "durationMin": 4,
+     "device": "DISK"
+    },
+    {
+     "type": "DB FULL",
+     "status": "COMPLETED",
+     "start": "261006.050000",
+     "end": "261006.073000",
+     "inputGB": 980,
+     "outputGB": 370,
+     "durationMin": 150,
+     "device": "DISK"
+    }
+   ],
+   "backup": {
+    "lastFull": "261006.070000",
+    "lastIncr": "",
+    "lastArch": "261015.060000",
+    "fullAgeH": 218,
+    "incrAgeH": null,
+    "archAgeH": 3,
+    "lastStatus": "COMPLETED",
+    "lastType": "ARCHIVELOG",
+    "failed14d": 0
+   },
+   "issues": [
+    {
+     "level": "WARN",
+     "msg": "Last full backup 218h ago"
+    }
+   ],
+   "status": "WARN"
+  },
+  {
+   "name": "DWHDB",
+   "group": "BI",
+   "env": "PROD",
+   "pairWith": "",
+   "backupExpected": true,
+   "collectedAt": "261015.085700",
+   "errors": [],
+   "connectError": "DPY-6005: cannot connect to database (CONNECTION_ID=...). [Errno 111] Connection refused",
+   "status": "DOWN",
+   "issues": [
+    {
+     "level": "CRIT",
+     "msg": "DPY-6005: cannot connect to database (CONNECTION_ID=...). [Errno 111] Connection refused"
+    }
+   ]
+  },
+  {
+   "collectedAt": "261015.040000",
+   "errors": [],
+   "logMode": "NOARCHIVELOG",
+   "forceLogging": "NO",
+   "instanceStatus": "OPEN",
+   "switchoverStatus": "NOT ALLOWED",
+   "protectionMode": "MAXIMUM PERFORMANCE",
+   "version": "19.0.0.0.0",
+   "startupTime": "260904.090000",
+   "backupExpected": false,
+   "name": "DEVDB",
+   "group": "ERP",
+   "env": "DEV",
+   "dbName": "DEVDB",
+   "dbUniqueName": "DEVDB",
+   "role": "PRIMARY",
+   "openMode": "READ WRITE",
+   "instanceName": "DEVDB",
+   "hostName": "db-dev-01",
+   "size": {
+    "dataGB": 320,
+    "tempGB": 16,
+    "redoGB": 1.5,
+    "allocatedGB": 337.5,
+    "usedGB": 150,
+    "maxGB": 400,
+    "freeGB": 170,
+    "pctUsed": 37.5
+   },
+   "tablespaces": [
+    {
+     "name": "ERP_DATA",
+     "contents": "PERMANENT",
+     "usedGB": 120,
+     "allocatedGB": 250,
+     "maxGB": 320,
+     "pctUsed": 37.5
+    },
+    {
+     "name": "SYSAUX",
+     "contents": "PERMANENT",
+     "usedGB": 10,
+     "allocatedGB": 16,
+     "maxGB": 32,
+     "pctUsed": 31.2
+    },
+    {
+     "name": "SYSTEM",
+     "contents": "PERMANENT",
+     "usedGB": 2.5,
+     "allocatedGB": 4,
+     "maxGB": 32,
+     "pctUsed": 7.8
+    }
+   ],
+   "maxTablespacePct": 37.5,
+   "fra": null,
+   "backups": [],
+   "backup": {
+    "lastFull": "",
+    "lastIncr": "",
+    "lastArch": "",
+    "fullAgeH": null,
+    "incrAgeH": null,
+    "archAgeH": null,
+    "lastStatus": null,
+    "lastType": null,
+    "failed14d": 0
+   },
+   "issues": [],
+   "status": "OK"
+  }
+ ]
+}

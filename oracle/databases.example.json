@@ -1,0 +1,49 @@
+{
+  "apiUrl": "https://script.google.com/macros/s/AKfycbyJgWHsro6BDSGBUW0Ax-stnZpzr49Ex1rj80PxmJMX-Ac7z_7UM-lvdlRuFNrxVdPW/exec",
+  "pushToken": "",
+  "thickMode": false,
+  "thresholds": {
+    "tablespaceWarnPct": 85,
+    "tablespaceCritPct": 95,
+    "fraWarnPct": 80,
+    "fraCritPct": 90,
+    "fullBackupWarnHours": 192,
+    "fullBackupCritHours": 336,
+    "incrBackupWarnHours": 36,
+    "archBackupWarnHours": 6,
+    "archBackupCritHours": 24,
+    "lagWarnSec": 300,
+    "lagCritSec": 1800
+  },
+  "databases": [
+    {
+      "name": "PRODDB",
+      "group": "ERP",
+      "env": "PROD",
+      "dsn": "db-prod-01:1521/PRODDB",
+      "user": "dbmon",
+      "passwordEnv": "ORA_PW_PRODDB",
+      "pairWith": "PRODDB_STBY"
+    },
+    {
+      "name": "PRODDB_STBY",
+      "group": "ERP",
+      "env": "PROD",
+      "dsn": "db-dr-01:1521/PRODDB_STBY",
+      "user": "sys",
+      "passwordEnv": "ORA_PW_PRODDB_STBY",
+      "mode": "SYSDG",
+      "pairWith": "PRODDB",
+      "backupExpected": false
+    },
+    {
+      "name": "UATDB",
+      "group": "ERP",
+      "env": "UAT",
+      "dsn": "db-uat-01:1521/UATDB",
+      "user": "dbmon",
+      "passwordEnv": "ORA_PW_UATDB",
+      "enabled": true
+    }
+  ]
+}
