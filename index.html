@@ -147,6 +147,10 @@ tbody td { padding: 10px 14px; font-size: 13px; white-space: nowrap; }
 .kv div:nth-child(odd) { color: var(--text-muted); }
 .ora-detail-panel { max-height: none; }
 .ora-detail-panel .history-body { max-height: 70vh; }
+.card-link { cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+.card-link:hover { border-color: var(--accent); background: var(--bg-hover); }
+.card-link .card-arrow { float: right; color: var(--text-muted); }
+.card-link:hover .card-arrow { color: var(--accent); }
 .spark { display: block; width: 100%; height: 90px; }
 #mainOracle .table-wrap, #mainOracle .history-panel { flex: none; }
 #mainOracle .table-scroll { overflow-x: auto; }
@@ -263,6 +267,11 @@ tbody td { padding: 10px 14px; font-size: 13px; white-space: nowrap; }
         <div class="summary-card card-fail"><div class="label">Failed</div><div class="value" id="sumFail">-</div></div>
         <div class="summary-card card-warn"><div class="label">Timeout</div><div class="value" id="sumWarn">-</div></div>
         <div class="summary-card"><div class="label">Runs (24h)</div><div class="value" id="sumRuns">-</div><div class="sub" id="sumFails24"></div></div>
+        <div class="summary-card card-link" id="oraHomeCard" onclick="switchView('oracle')" title="Open Oracle DB">
+          <div class="label">Oracle DB <span class="card-arrow">→</span></div>
+          <div class="value" id="oraHomeValue">-</div>
+          <div class="sub" id="oraHomeSub">Loading...</div>
+        </div>
       </div>
 
       <!-- Table -->
@@ -645,6 +654,7 @@ function refresh() {
     refreshOracle(function() { btn.classList.remove('spinning'); });
     return;
   }
+  refreshOracle();  // keeps the Oracle card on this page current
   fetchStatus(function(err, data) {
     btn.classList.remove('spinning');
     if (err) return;
@@ -750,8 +760,9 @@ function switchView(view) {
   if (view === 'oracle') {
     if (ora.loaded) oraUpdateHeader();
     if (!ora.fetched) refreshOracle();
-  } else if (state.lastTimestamp) {
-    document.getElementById('lastUpdate').textContent = 'Updated: ' + formatRelative(state.lastTimestamp);
+  } else {
+    document.getElementById('lastUpdate').textContent = state.lastTimestamp ? 'Updated: ' + formatRelative(state.lastTimestamp) : '-';
+    document.getElementById('footerLeft').textContent = state.scripts.length + ' scripts · Last refresh: ' + formatTime(state.lastTimestamp);
   }
 }
 
@@ -792,6 +803,7 @@ function refreshOracle(done) {
     if (done) done();
     if (err || !data || !data.databases) {
       if (!ora.loaded) {
+        setText('oraHomeSub', err ? 'Could not load' : 'No data yet');
         document.getElementById('oraTableBody').innerHTML = '<tr><td colspan="12"><div class="empty">' +
           (err ? 'Could not load Oracle data' : 'No Oracle data yet — run oracle/oracle_status_collector.py (see oracle/README.md)') +
           '</div></td></tr>';
@@ -875,6 +887,7 @@ function oraRenderSummary() {
   setText('oraSumLagSub', maxLagDb);
   document.getElementById('oraSumLag').style.color = maxLag === null ? '' : lvlColor(oraLevel(maxLag, ora.th.lagWarnSec, ora.th.lagCritSec));
   setText('oraCountAll', rows.length); setText('oraCountOk', ok); setText('oraCountWarn', warn); setText('oraCountCrit', crit);
+  oraRenderHomeCard(rows.length, ok, warn, crit, maxLag);
 
   // Issues
   var issues = [];
@@ -893,6 +906,20 @@ function oraRenderSummary() {
       (it.level === 'CRIT' ? 'var(--fail)' : 'var(--warn)') + '">' + esc(it.level) + '</span><b>' + esc(it.db) + '</b><span>' + esc(it.msg) + '</span></div>';
   }
   box.innerHTML = html;
+}
+
+/** Oracle card on the Scripts page: worst state first, click opens the Oracle tab. */
+function oraRenderHomeCard(total, ok, warn, crit, maxLag) {
+  var val = document.getElementById('oraHomeValue');
+  if (!total) { val.textContent = '-'; val.style.color = ''; setText('oraHomeSub', 'No data yet'); return; }
+  if (crit) { val.textContent = crit + ' CRIT'; val.style.color = 'var(--fail)'; }
+  else if (warn) { val.textContent = warn + ' WARN'; val.style.color = 'var(--warn)'; }
+  else { val.textContent = 'All OK'; val.style.color = 'var(--ok)'; }
+  var parts = [total + ' DBs'];
+  if (crit && warn) parts.push(warn + ' warn');
+  if (ok && (crit || warn)) parts.push(ok + ' ok');
+  if (maxLag !== null) parts.push('lag ' + fmtSec(maxLag));
+  setText('oraHomeSub', parts.join(' · '));
 }
 
 function oraApplyFilters() {
@@ -1290,6 +1317,7 @@ function setText(id, v) { document.getElementById(id).textContent = (v === null 
     if (oraCached) oraOnDataLoaded(JSON.parse(oraCached));
   } catch(e) {}
   switchView(view);
+  if (!ora.fetched) refreshOracle();  // Oracle card on the Scripts page
 
   // Fetch fresh
   fetchStatus(function(err, data) {
